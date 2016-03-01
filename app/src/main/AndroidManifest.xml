@@ -31,7 +31,7 @@
                 <category android:name="${applicationId}" />
             </intent-filter>
         </receiver>
-
+        <receiver android:name=".IntentReceiver$switchButtonListener" />
     </application>
 
 </manifest>
