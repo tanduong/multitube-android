@@ -17,11 +17,9 @@ public class applicationMain extends Application{
         UAirship.takeOff(this, new UAirship.OnReadyCallback() {
             @Override
             public void onAirshipReady(UAirship airship) {
-
-                // Enable user notifications
+                //shut up default notify when mess come
                 airship.getPushManager().setUserNotificationsEnabled(false);
-                //String str = airship.getPushManager().getLastReceivedMetadata();
-                //Log.e("The Metatdata:: ", str);
+
             }
         });
     }

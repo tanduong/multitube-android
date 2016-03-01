@@ -6,7 +6,9 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -19,6 +21,7 @@ import com.urbanairship.push.PushMessage;
  */
 public class IntentReceiver extends BaseIntentReceiver {
     private static final String TAG = "PUT_URL";
+    static final String mainUrl = "";
 
     @Override
     protected void onChannelRegistrationSucceeded(Context context, String channelId) {
@@ -39,22 +42,19 @@ public class IntentReceiver extends BaseIntentReceiver {
     public static class switchButtonListener extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            //-----> clear notify
             String ns = Context.NOTIFICATION_SERVICE;
             NotificationManager notificationManager =
                     (NotificationManager) context.getSystemService(ns);
 
-
             notificationManager.cancel(1);
-
-            Intent videoIntent = new Intent(Intent.ACTION_VIEW);
-           String strUrl =  intent.getStringExtra(TAG);
-            Log.e(TAG, strUrl);
-            videoIntent.setData(Uri.parse(strUrl));
-            videoIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-          // videoIntent.setClassName("com.google.android.youtube", "com.google.android.youtube.WatchActivity");
-          context.startActivity(videoIntent);
-            //context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(strUrl)));
+            //<------end
+            //---> set up to save to clipboard
+            String url = intent.getStringExtra(TAG);
+            Log.e(TAG,url);
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = android.content.ClipData.newPlainText("Message",url);
+            clipboard.setPrimaryClip(clip);
         }
     }
     @Override
@@ -64,42 +64,59 @@ public class IntentReceiver extends BaseIntentReceiver {
     }
 
     private void setNotify(Context context, PushMessage message){
+        //get Mode
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        //if Mode open with youtube immediately is FALSE then do:
+        if (!prefs.getBoolean(MainActivity.MODE, true)) {
 
-        String ns = Context.NOTIFICATION_SERVICE;
-        NotificationManager notificationManager =
-                (NotificationManager) context.getSystemService(ns);
+            //get system notify service
+            String ns = Context.NOTIFICATION_SERVICE;
+            NotificationManager notificationManager =
+                    (NotificationManager) context.getSystemService(ns);
 
+            // get Notify layout
+            RemoteViews notificationView = new RemoteViews(context.getPackageName(),
+                    R.layout.mynotification);
+            //----->set up Intent to play video when tap on notifycation
+            Intent videoIntent = new Intent(Intent.ACTION_VIEW);
+            videoIntent.setData(Uri.parse(message.getAlert()));
+            videoIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            PendingIntent pendingNotificationIntent = PendingIntent.getActivity(context, 0,
+                    videoIntent, 0);
+            //<----end set up
+            Log.e("URL current::",message.getAlert());
+            //--->set up notifycation
+            NotificationCompat.Builder mBuilder =
+                    new NotificationCompat.Builder(context)
+                            .setSmallIcon(R.drawable.notify_icon)
+                            .setContentTitle("TubApp")
+                            .setContentText(message.getAlert())
+                            .setContent(notificationView)
+                            .setContentIntent(pendingNotificationIntent);
+            Notification notification = mBuilder.build();
+            //<---- end set up
+            //set auto clear notify when tap on it
+            notification.flags = Notification.FLAG_INSISTENT | Notification.FLAG_AUTO_CANCEL;
+            //----->set up intent for liston ation button coppy
+            Intent switchIntent = new Intent(context, switchButtonListener.class);
 
-        RemoteViews notificationView = new RemoteViews(context.getPackageName(),
-                R.layout.mynotification);
+            switchIntent.putExtra(TAG, message.getAlert());
+            Log.e("Why won here", switchIntent.getStringExtra(TAG));
+            PendingIntent pendingSwitchIntent = PendingIntent.getBroadcast(context, 0,
+                    switchIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        //the intent that is started when the notification is clicked (works)
-        Intent notificationIntent = new Intent(context, MainActivity.class);
-        PendingIntent pendingNotificationIntent = PendingIntent.getActivity(context, 0,
-                notificationIntent, 0);
-
-        // notification.flags |= Notification.F;
-
-        NotificationCompat.Builder mBuilder =
-                new NotificationCompat.Builder(context)
-                        .setSmallIcon(R.drawable.notify_icon)
-                        .setContentTitle("TubApp")
-                        .setContentText(message.getAlert())
-                        .setContent(notificationView)
-                        .setContentIntent(pendingNotificationIntent);
-        Notification notification = mBuilder.build();
-        notification.flags = Notification.FLAG_INSISTENT | Notification.FLAG_AUTO_CANCEL;
-        //this is the intent that is supposed to be called when the
-        //button is clicked
-        Intent switchIntent = new Intent(context, switchButtonListener.class);
-
-        switchIntent.putExtra(TAG,message.getAlert());
-
-        PendingIntent pendingSwitchIntent = PendingIntent.getBroadcast(context, 0,
-                switchIntent, 0);
-        notificationView.setOnClickPendingIntent(R.id.closeOnFlash,
-                pendingSwitchIntent);
-        notificationManager.notify(1, notification);
+            notificationView.setOnClickPendingIntent(R.id.closeOnFlash,
+                    pendingSwitchIntent);
+            //<----- end set up
+            //notify
+            notificationManager.notify(1, notification);
+        }else {
+            //set up intent to open youtube
+            Intent videoIntent = new Intent(Intent.ACTION_VIEW);
+            videoIntent.setData(Uri.parse(message.getAlert()));
+            videoIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(videoIntent);
+        }
     }
 
     @Override

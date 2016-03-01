@@ -17,7 +17,26 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Hello World!" />
+    <LinearLayout
+        android:id="@+id/sittingMode"
+        android:layout_below="@+id/textHello"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/textMode"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:text="Open with Youbute immediately" />
+        <ToggleButton
+            android:id="@+id/radioMode"
+            android:layout_below="@+id/textHello"
+            android:layout_width="50dp"
+            android:layout_height="50dp" />
+
+    </LinearLayout>
     <ListView
+        android:layout_below="@+id/sittingMode"
         android:id="@+id/listLink"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
