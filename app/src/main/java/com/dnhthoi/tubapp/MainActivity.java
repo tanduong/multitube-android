@@ -8,6 +8,9 @@ import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
@@ -20,35 +23,43 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
+import com.dnhthoi.tubapp.Adapter.YouTubeUrlAdapter;
+import com.dnhthoi.tubapp.data.YouTubeData;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import io.realm.Realm;
+import io.realm.RealmResults;
+
 public class MainActivity extends AppCompatActivity {
 
     public static final String MODE = "MODE";
+    private  Realm mRealm;
+    private ArrayList<YouTubeData> mUrls;
+    private RecyclerView mListUrl;
+    private YouTubeUrlAdapter mAdapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        final String arr[]={"https://www.youtube.com/watch?v=TflglOoMU8s",
-                "https://www.youtube.com/watch?v=_-S3YwU6QuM",
-                "https://www.youtube.com/watch?v=65_kf3KX9Oc"};
-        ListView lv=(ListView) findViewById(R.id.listLink);
-        ArrayAdapter<String> adapter=new ArrayAdapter<String>
-                (this, android.R.layout.simple_list_item_1, arr);
-        lv.setAdapter(adapter);
-        final TextView txt=(TextView) findViewById(R.id.textHello);
-        lv.setOnItemClickListener(
-                new AdapterView.OnItemClickListener() {
-                    public void onItemClick(AdapterView<?> arg0,
-                                            View arg1,
-                                            int arg2,
-                                            long arg3) {
-                        txt.setText("position :" + arg2 + " ; value =" + arr[arg2]);
-                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(arr[arg2])));
-                    }
-                });
-
+        mRealm  = Realm.getInstance(this);
+        mRealm.beginTransaction();
+        RealmResults<YouTubeData> data = mRealm.where(YouTubeData.class).findAll();
+        mRealm.commitTransaction();
+        mUrls = new ArrayList<YouTubeData>();
+        if(data.size() != 0){
+            for( YouTubeData url : data) {
+                mUrls.add(url);
+            }
+        }
+        mListUrl = (RecyclerView) findViewById(R.id.listLink);
+        mAdapter = new YouTubeUrlAdapter(this, mUrls);
+        mListUrl.setAdapter(mAdapter);
+        mListUrl.setItemAnimator(new DefaultItemAnimator());
+        mListUrl.setLayoutManager(new LinearLayoutManager(this));
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -57,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
-        ToggleButton togg = (ToggleButton)findViewById(R.id.radioMode);
+        ToggleButton togg = (ToggleButton) findViewById(R.id.radioMode);
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         togg.setChecked(prefs.getBoolean(MODE, true));
         togg.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -66,13 +77,17 @@ public class MainActivity extends AppCompatActivity {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
                 SharedPreferences.Editor editor = prefs.edit();
-                    editor.putBoolean(MODE, isChecked);
-                    editor.commit();
-                    Log.e("prefs.getBoolean ",""+prefs.getBoolean(MODE, true));
-
-
+                editor.putBoolean(MODE, isChecked);
+                editor.commit();
+                Log.e("prefs.getBoolean ", "" + prefs.getBoolean(MODE, true));
             }
         });
+    }
+
+    public void deleteDataItem(int index){
+        mRealm.beginTransaction();
+        mUrls.remove(index);
+        mRealm.commitTransaction();
     }
 
     @Override
