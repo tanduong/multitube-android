@@ -13,8 +13,23 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import com.dnhthoi.tubapp.data.YouTubeData;
+import com.urbanairship.UAirship;
 import com.urbanairship.push.BaseIntentReceiver;
 import com.urbanairship.push.PushMessage;
+
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import io.realm.Realm;
 
 /**
  * Created by ant on 01/03/2016.
@@ -26,6 +41,7 @@ public class IntentReceiver extends BaseIntentReceiver {
     @Override
     protected void onChannelRegistrationSucceeded(Context context, String channelId) {
         Log.e(TAG, "Channel registration updated. Channel Id:" + channelId + ".");
+        UAirship.shared().getPushManager().getNamedUser().setId("NamedUserID");
     }
 
     @Override
@@ -64,6 +80,8 @@ public class IntentReceiver extends BaseIntentReceiver {
     }
 
     private void setNotify(Context context, PushMessage message){
+
+        getYouTubeData(message.getAlert(), context);
         //get Mode
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         //if Mode open with youtube immediately is FALSE then do:
@@ -119,6 +137,56 @@ public class IntentReceiver extends BaseIntentReceiver {
         }
     }
 
+
+    private void getYouTubeData(final String url,final Context context){
+        RequestQueue queue = Volley.newRequestQueue(context);
+
+// Request a string response from the provided URL.
+        final String baseUrl = "https://www.youtube.com/list_ajax?style=json&action_get_templist=1&video_ids=";
+
+        String urlFecthInfo = baseUrl + url.split("v=")[1];
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, urlFecthInfo,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        // Display the first 500 characters of the response string.
+                        //save youtube url
+                        try {
+                            JSONObject jsonResponse = new JSONObject(response);
+
+                            //JSONObject jsonResponse = new JSONObject(response);
+
+                            JSONArray videoDataArr = jsonResponse.getJSONArray("video");
+
+                            JSONObject videoData = videoDataArr.getJSONObject(0);
+
+                            String title = videoData.getString("title");
+                            String thumbnails = videoData.getString("thumbnail");
+
+                            Realm realm = Realm.getInstance(context);
+                            realm.beginTransaction();
+                            YouTubeData data = realm.createObject(YouTubeData.class);
+                            data.setUrl(url);
+                            data.setThumbnails(thumbnails);
+                            data.setTitle(title);
+                            realm.commitTransaction();
+
+                            Log.e("Done::: ", thumbnails);
+                        }catch (JSONException jEx){
+                            Log.e("Json err", jEx.toString());
+                        }
+
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        });
+// Add the request to the RequestQueue.
+        queue.add(stringRequest);
+    }
+
     @Override
     protected boolean onNotificationOpened(Context context, PushMessage message, int notificationId) {
         Log.e(TAG, "User clicked notification. Alert: " + message.getAlert());
@@ -139,4 +207,6 @@ public class IntentReceiver extends BaseIntentReceiver {
     protected void onNotificationDismissed(Context context, PushMessage message, int notificationId) {
         Log.e(TAG, "Notification dismissed. Alert: " + message.getAlert() + ". Notification ID: " + notificationId);
     }
+
+
 }
