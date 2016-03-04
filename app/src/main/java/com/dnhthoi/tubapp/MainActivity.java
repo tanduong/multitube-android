@@ -83,7 +83,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
+    public RecyclerView getmListUrl() {
+        return mListUrl;
+    }
     public void deleteDataItem(int index){
         mRealm.beginTransaction();
         mUrls.remove(index);
