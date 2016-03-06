@@ -2,12 +2,14 @@ package com.dnhthoi.tubapp;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import com.google.android.gms.auth.api.Auth;
+
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -25,9 +27,11 @@ public class LoginActivity extends AppCompatActivity implements
         View.OnClickListener {
 
     private static final String TAG = "SignInActivity";
+    private static final String GMAIL = "gmail";
+    private static final String LOGIN = "LOGIN";
     private static final int RC_SIGN_IN = 9001;
 
-    private GoogleApiClient mGoogleApiClient;
+    public  GoogleApiClient mGoogleApiClient;
     private TextView mStatusTextView;
     private ProgressDialog mProgressDialog;
 
@@ -35,7 +39,6 @@ public class LoginActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.content_login);
-
         // Views
         mStatusTextView = (TextView) findViewById(R.id.status);
         // Button listeners
@@ -118,9 +121,14 @@ public class LoginActivity extends AppCompatActivity implements
         Log.d(TAG, "handleSignInResult:" + result.isSuccess());
         if (result.isSuccess()) {
             // Signed in successfully, show authenticated UI.
+            PreferenceManager.getDefaultSharedPreferences(this)
+                    .edit().putBoolean(LOGIN, true).commit();
             GoogleSignInAccount acct = result.getSignInAccount();
-            mStatusTextView.setText(getString(R.string.signed_in_fmt, acct.getDisplayName()));
+            mStatusTextView.setText(getString(R.string.signed_in_fmt, acct.getEmail()));
             updateUI(true);
+            PreferenceManager.getDefaultSharedPreferences(this)
+                    .edit().putString(GMAIL, acct.getEmail()).commit();
+            startMainActivity();
         } else {
             // Signed out, show unauthenticated UI.
             updateUI(false);
@@ -148,6 +156,21 @@ public class LoginActivity extends AppCompatActivity implements
                 });
     }
     // [END signOut]
+
+    //[Start main Activyti]
+    private void startMainActivity(){
+        Intent intentMainActivity = new Intent(this, MainActivity.class);
+        startActivity(intentMainActivity);
+        finish();
+    }
+    //[end start main activity]
+
+    private void checkForLogin(){
+        if(PreferenceManager.getDefaultSharedPreferences(this)
+                .getBoolean(LOGIN,false)){
+            startMainActivity();
+        }
+    }
 
     // [START revokeAccess]
     private void revokeAccess() {

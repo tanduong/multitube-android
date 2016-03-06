@@ -16,17 +16,24 @@ import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
+import io.realm.Realm;
+import io.realm.RealmResults;
+
 /**
  * Created by ant on 02/03/2016.
  */
 public class YouTubeUrlAdapter extends RecyclerView.Adapter<YouTubeUrlViewHolder> implements YouTubeUrlViewHolder.OnItemClick{
 
     private Context context;
-    private ArrayList<YouTubeData> items;
+    private Realm mRealm;
+    private RealmResults<YouTubeData> listData;
 
-    public YouTubeUrlAdapter(Context context, ArrayList<YouTubeData> items) {
+    public YouTubeUrlAdapter(MainActivity context) {
         this.context = context;
-        this.items = items;
+        mRealm  = Realm.getInstance(context);
+        mRealm.beginTransaction();
+        listData = mRealm.where(YouTubeData.class).findAll();
+        mRealm.commitTransaction();
     }
 
     @Override
@@ -38,7 +45,7 @@ public class YouTubeUrlAdapter extends RecyclerView.Adapter<YouTubeUrlViewHolder
 
     @Override
     public void onBindViewHolder(YouTubeUrlViewHolder holder, int position) {
-        final YouTubeData data = items.get(position);
+        final YouTubeData data = listData.get(position);
         final int index = position;
         Log.e("thumbnails",data.getThumbnails());
         Log.e("URL ::",data.getUrl());
@@ -56,8 +63,11 @@ public class YouTubeUrlAdapter extends RecyclerView.Adapter<YouTubeUrlViewHolder
         holder.btnDelate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                items.remove(index);
-                ((MainActivity)context).deleteDataItem(index);
+                mRealm.beginTransaction();
+                listData.remove(index);
+                mRealm.commitTransaction();
+                notifyItemRemoved(index);
+                notifyItemRangeChanged(index, listData.size());
             }
         });
     }
@@ -72,14 +82,14 @@ public class YouTubeUrlAdapter extends RecyclerView.Adapter<YouTubeUrlViewHolder
 
     @Override
     public int getItemCount() {
-        return items.size();
+        return listData.size();
     }
 
     @Override
     public void click(View view) {
         int itemPosition = ((MainActivity)context).getmListUrl().getChildAdapterPosition(view);
         Intent videoIntent = new Intent(Intent.ACTION_VIEW);
-        videoIntent.setData(Uri.parse(items.get(itemPosition).getUrl()));
+        videoIntent.setData(Uri.parse(listData.get(itemPosition).getUrl()));
         videoIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(videoIntent);
     }

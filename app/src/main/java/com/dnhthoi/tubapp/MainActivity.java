@@ -25,18 +25,15 @@ import android.widget.ToggleButton;
 
 import com.dnhthoi.tubapp.Adapter.YouTubeUrlAdapter;
 import com.dnhthoi.tubapp.data.YouTubeData;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import io.realm.Realm;
-import io.realm.RealmResults;
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String MODE = "MODE";
-    private  Realm mRealm;
-    private ArrayList<YouTubeData> mUrls;
     private RecyclerView mListUrl;
     private YouTubeUrlAdapter mAdapter;
     @Override
@@ -45,18 +42,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        mRealm  = Realm.getInstance(this);
-        mRealm.beginTransaction();
-        RealmResults<YouTubeData> data = mRealm.where(YouTubeData.class).findAll();
-        mRealm.commitTransaction();
-        mUrls = new ArrayList<YouTubeData>();
-        if(data.size() != 0){
-            for( YouTubeData url : data) {
-                mUrls.add(url);
-            }
-        }
+
         mListUrl = (RecyclerView) findViewById(R.id.listLink);
-        mAdapter = new YouTubeUrlAdapter(this, mUrls);
+        mAdapter = new YouTubeUrlAdapter(this);
         mListUrl.setAdapter(mAdapter);
         mListUrl.setItemAnimator(new DefaultItemAnimator());
         mListUrl.setLayoutManager(new LinearLayoutManager(this));
@@ -86,11 +74,6 @@ public class MainActivity extends AppCompatActivity {
     public RecyclerView getmListUrl() {
         return mListUrl;
     }
-    public void deleteDataItem(int index){
-        mRealm.beginTransaction();
-        mUrls.remove(index);
-        mRealm.commitTransaction();
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -109,10 +92,24 @@ public class MainActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             // if true open with youtube imdite
-
+            logOut();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+    public void logOut(){
+
+//        Auth.GoogleSignInApi.signOut(googleApiClient).setResultCallback(
+//                new ResultCallback<Status>() {
+//                    @Override
+//                    public void onResult(Status status) {
+//                        // [START_EXCLUDE]
+//                        Intent intentLogIn = new Intent(MainActivity.this, LoginActivity.class);
+//                        startActivity(intentLogIn);
+//                        finish();
+//                        // [END_EXCLUDE]
+//                    }
+//                });
     }
 }
