@@ -4,13 +4,22 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+
+import com.dnhthoi.tubapp.Adapter.YouTubeUrlAdapter;
 import com.google.android.gms.auth.api.Auth;
 
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -25,22 +34,45 @@ import com.google.android.gms.common.api.Status;
 public class LoginActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         View.OnClickListener {
-
+    public static final String MODE = "MODE";
     private static final String TAG = "SignInActivity";
     private static final String GMAIL = "gmail";
     private static final String LOGIN = "LOGIN";
     private static final int RC_SIGN_IN = 9001;
-
+    private RecyclerView mListUrl;
+    private YouTubeUrlAdapter mAdapter;
     public  GoogleApiClient mGoogleApiClient;
-    private TextView mStatusTextView;
     private ProgressDialog mProgressDialog;
+    private LinearLayout mContener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.content_login);
-        // Views
-        mStatusTextView = (TextView) findViewById(R.id.status);
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        mContener = (LinearLayout) findViewById(R.id.contener);
+        mListUrl = (RecyclerView) findViewById(R.id.listLink);
+        mAdapter = new YouTubeUrlAdapter(this);
+        mListUrl.setAdapter(mAdapter);
+        mListUrl.setItemAnimator(new DefaultItemAnimator());
+        mListUrl.setLayoutManager(new LinearLayoutManager(this));
+
+        ToggleButton togg = (ToggleButton) findViewById(R.id.radioMode);
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        togg.setChecked(prefs.getBoolean(MODE, true));
+        togg.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean(MODE, isChecked);
+                editor.commit();
+                Log.e("prefs.getBoolean ", "" + prefs.getBoolean(MODE, true));
+            }
+        });
         // Button listeners
         findViewById(R.id.sign_in_button).setOnClickListener(this);
         findViewById(R.id.sign_out_button).setOnClickListener(this);
@@ -76,11 +108,13 @@ public class LoginActivity extends AppCompatActivity implements
         signInButton.setScopes(gso.getScopeArray());
         // [END customize_button]
     }
-
+    public RecyclerView getmListUrl() {
+        return mListUrl;
+    }
     @Override
     public void onStart() {
         super.onStart();
-
+        mAdapter.reloadData();
         OptionalPendingResult<GoogleSignInResult> opr = Auth.GoogleSignInApi.silentSignIn(mGoogleApiClient);
         if (opr.isDone()) {
             // If the user's cached credentials are valid, the OptionalPendingResult will be "done"
@@ -124,11 +158,9 @@ public class LoginActivity extends AppCompatActivity implements
             PreferenceManager.getDefaultSharedPreferences(this)
                     .edit().putBoolean(LOGIN, true).commit();
             GoogleSignInAccount acct = result.getSignInAccount();
-            mStatusTextView.setText(getString(R.string.signed_in_fmt, acct.getEmail()));
             updateUI(true);
             PreferenceManager.getDefaultSharedPreferences(this)
                     .edit().putString(GMAIL, acct.getEmail()).commit();
-            startMainActivity();
         } else {
             // Signed out, show unauthenticated UI.
             updateUI(false);
@@ -156,22 +188,6 @@ public class LoginActivity extends AppCompatActivity implements
                 });
     }
     // [END signOut]
-
-    //[Start main Activyti]
-    private void startMainActivity(){
-        Intent intentMainActivity = new Intent(this, MainActivity.class);
-        startActivity(intentMainActivity);
-        finish();
-    }
-    //[end start main activity]
-
-    private void checkForLogin(){
-        if(PreferenceManager.getDefaultSharedPreferences(this)
-                .getBoolean(LOGIN,false)){
-            startMainActivity();
-        }
-    }
-
     // [START revokeAccess]
     private void revokeAccess() {
         Auth.GoogleSignInApi.revokeAccess(mGoogleApiClient).setResultCallback(
@@ -213,9 +229,9 @@ public class LoginActivity extends AppCompatActivity implements
         if (signedIn) {
             findViewById(R.id.sign_in_button).setVisibility(View.GONE);
             findViewById(R.id.sign_out_and_disconnect).setVisibility(View.VISIBLE);
+            mContener.setVisibility(View.VISIBLE);
         } else {
-            mStatusTextView.setText(R.string.signed_out);
-
+            mContener.setVisibility(View.GONE);
             findViewById(R.id.sign_in_button).setVisibility(View.VISIBLE);
             findViewById(R.id.sign_out_and_disconnect).setVisibility(View.GONE);
         }

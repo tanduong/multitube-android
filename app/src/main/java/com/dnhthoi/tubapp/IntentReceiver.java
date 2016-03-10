@@ -31,6 +31,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import io.realm.Realm;
+import io.realm.RealmQuery;
+import io.realm.RealmResults;
 
 /**
  * Created by ant on 01/03/2016.
@@ -56,6 +58,7 @@ public class IntentReceiver extends BaseIntentReceiver {
         setNotify(context, message);
 
     }
+
     public static class switchButtonListener extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -68,25 +71,26 @@ public class IntentReceiver extends BaseIntentReceiver {
             //<------end
             //---> set up to save to clipboard
             String url = intent.getStringExtra(TAG);
-            Log.e(TAG,url);
+            Log.e(TAG, url);
             android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            android.content.ClipData clip = android.content.ClipData.newPlainText("Message",url);
+            android.content.ClipData clip = android.content.ClipData.newPlainText("Message", url);
             clipboard.setPrimaryClip(clip);
         }
     }
+
     @Override
     protected void onBackgroundPushReceived(Context context, PushMessage message) {
         Log.e(TAG, "Received background push message: " + message);
         setNotify(context, message);
     }
 
-    private void setNotify(Context context, PushMessage message){
+    private void setNotify(Context context, PushMessage message) {
 
         getYouTubeData(message.getAlert(), context);
         //get Mode
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         //if Mode open with youtube immediately is FALSE then do:
-        if (!prefs.getBoolean(MainActivity.MODE, true)) {
+        if (!prefs.getBoolean(LoginActivity.MODE, true)) {
 
             //get system notify service
             String ns = Context.NOTIFICATION_SERVICE;
@@ -103,7 +107,7 @@ public class IntentReceiver extends BaseIntentReceiver {
             PendingIntent pendingNotificationIntent = PendingIntent.getActivity(context, 0,
                     videoIntent, 0);
             //<----end set up
-            Log.e("URL current::",message.getAlert());
+            Log.e("URL current::", message.getAlert());
             //--->set up notifycation
             NotificationCompat.Builder mBuilder =
                     new NotificationCompat.Builder(context)
@@ -111,8 +115,8 @@ public class IntentReceiver extends BaseIntentReceiver {
                             .setContentTitle("TubApp")
                             .setContentText(message.getAlert())
                             .setContent(notificationView)
-                            .setContentIntent(pendingNotificationIntent)
-                    .setSound(Settings.System.DEFAULT_NOTIFICATION_URI);
+                            .setContentIntent(pendingNotificationIntent);
+            // .setSound(Settings.System.DEFAULT_NOTIFICATION_URI);
             Notification notification = mBuilder.build();
             //<---- end set up
             //set auto clear notify when tap on it
@@ -127,10 +131,11 @@ public class IntentReceiver extends BaseIntentReceiver {
 
             notificationView.setOnClickPendingIntent(R.id.closeOnFlash,
                     pendingSwitchIntent);
+            notificationView.setTextViewText(R.id.appName, message.getAlert());
             //<----- end set up
             //notify
             notificationManager.notify(1, notification);
-        }else {
+        } else {
             //set up intent to open youtube
             Intent videoIntent = new Intent(Intent.ACTION_VIEW);
             videoIntent.setData(Uri.parse(message.getAlert()));
@@ -140,7 +145,7 @@ public class IntentReceiver extends BaseIntentReceiver {
     }
 
 
-    private void getYouTubeData(final String url,final Context context){
+    private void getYouTubeData(final String url, final Context context) {
         RequestQueue queue = Volley.newRequestQueue(context);
 
 // Request a string response from the provided URL.
@@ -166,15 +171,26 @@ public class IntentReceiver extends BaseIntentReceiver {
                             String thumbnails = videoData.getString("thumbnail");
 
                             Realm realm = Realm.getInstance(context);
-                            realm.beginTransaction();
-                            YouTubeData data = realm.createObject(YouTubeData.class);
-                            data.setUrl(url);
-                            data.setThumbnails(thumbnails);
-                            data.setTitle(title);
-                            realm.commitTransaction();
+
+
+                            RealmQuery<YouTubeData> query = realm.where(YouTubeData.class);
+
+                            // Add query conditions:
+                            query.equalTo("url", url);
+                            RealmResults<YouTubeData> result1 = query.findAll();
+                            if (result1.size() != 0) {
+
+                            } else {
+                                realm.beginTransaction();
+                                YouTubeData data = realm.createObject(YouTubeData.class);
+                                data.setUrl(url);
+                                data.setThumbnails(thumbnails);
+                                data.setTitle(title);
+                                realm.commitTransaction();
+                            }
 
                             Log.e("Done::: ", thumbnails);
-                        }catch (JSONException jEx){
+                        } catch (JSONException jEx) {
                             Log.e("Json err", jEx.toString());
                         }
 
