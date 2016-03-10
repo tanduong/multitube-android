@@ -1,0 +1,56 @@
+{
+  "project_info": {
+    "project_id": "tubapp-1236",
+    "project_number": "963419112009",
+    "name": "tubApp"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:963419112009:android:18f8e7966ef00c95",
+        "client_id": "android:com.dnhthoi.tubapp",
+        "client_type": 1,
+        "android_client_info": {
+          "package_name": "com.dnhthoi.tubapp",
+          "certificate_hash": []
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "963419112009-jvfbmnra1jdhmup1e4q19e907jje3cev.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dnhthoi.tubapp",
+            "certificate_hash": "1F2951F168F58A520EB896077D6A4E1AC61E9060"
+          }
+        },
+        {
+          "client_id": "963419112009-plcm81ipng50bknc13mo5tm5e2jgpeai.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "cloud_messaging_service": {
+          "status": 1,
+          "apns_config": []
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "google_signin_service": {
+          "status": 2
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "client_info": [],
+  "ARTIFACT_VERSION": "1"
+}
