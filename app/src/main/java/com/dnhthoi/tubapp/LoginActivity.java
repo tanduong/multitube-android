@@ -18,7 +18,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.ToggleButton;
 
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
