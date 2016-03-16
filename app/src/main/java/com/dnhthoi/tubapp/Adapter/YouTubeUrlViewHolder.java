@@ -18,6 +18,7 @@ public class YouTubeUrlViewHolder extends RecyclerView.ViewHolder implements Vie
 
     private Context context;
     public TextView tvTitle;
+    public TextView tvDuration;
     public Button btnShare;
     public Button btnDelate;
     public ImageView imgThumbal;
@@ -29,6 +30,7 @@ public class YouTubeUrlViewHolder extends RecyclerView.ViewHolder implements Vie
         btnDelate = (Button)itemView.findViewById(R.id.btn_item_delete);
         btnShare = (Button)itemView.findViewById(R.id.btn_item_share);
         imgThumbal = (ImageView)itemView.findViewById(R.id.img_thumbal);
+        tvDuration = (TextView) itemView.findViewById(R.id.tv_duration);
         this.listoner = listoner;
         itemView.setOnClickListener(this);
     }

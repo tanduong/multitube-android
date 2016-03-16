@@ -1,13 +1,17 @@
 package com.dnhthoi.tubapp;
 
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import com.dnhthoi.tubapp.Adapter.YouTubeUrlAdapter;
 import com.google.android.gms.auth.api.Auth;
 
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -15,9 +19,12 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -29,6 +36,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.OptionalPendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
+
 
 public class LoginActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
@@ -43,7 +51,11 @@ public class LoginActivity extends AppCompatActivity implements
     public  GoogleApiClient mGoogleApiClient;
     private ProgressDialog mProgressDialog;
     private LinearLayout mContener;
+    private LinearLayout mSignInContener;
 
+    private  MenuItem mItemSignOut;
+    private  MenuItem mItemDiconnect;
+    MyReceiver receiver;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,6 +64,7 @@ public class LoginActivity extends AppCompatActivity implements
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         mContener = (LinearLayout) findViewById(R.id.contener);
+        mSignInContener= (LinearLayout) findViewById(R.id.sign_button_contenner);
         mListUrl = (RecyclerView) findViewById(R.id.listLink);
         mAdapter = new YouTubeUrlAdapter(this);
         mListUrl.setAdapter(mAdapter);
@@ -74,8 +87,6 @@ public class LoginActivity extends AppCompatActivity implements
         });
         // Button listeners
         findViewById(R.id.sign_in_button).setOnClickListener(this);
-        findViewById(R.id.sign_out_button).setOnClickListener(this);
-        findViewById(R.id.disconnect_button).setOnClickListener(this);
 
         // [START configure_signin]
         // Configure sign-in to request the user's ID, email address, and basic
@@ -106,14 +117,29 @@ public class LoginActivity extends AppCompatActivity implements
         signInButton.setSize(SignInButton.SIZE_STANDARD);
         signInButton.setScopes(gso.getScopeArray());
         // [END customize_button]
+
+         receiver = new MyReceiver(new Handler()); // Create the receiver
+         // Register receiver
     }
+    @Override
+    public void onResume(){
+        super.onResume();
+        registerReceiver(receiver, new IntentFilter("UpdateUI.RecycleViewItem"));
+    }
+    @Override
+    public void onPause(){
+        super.onPause();
+        //unregisterReceiver(receiver);
+        //mAdapter.reloadData();
+    }
+
+
     public RecyclerView getmListUrl() {
         return mListUrl;
     }
     @Override
     public void onStart() {
         super.onStart();
-        mAdapter.reloadData();
         OptionalPendingResult<GoogleSignInResult> opr = Auth.GoogleSignInApi.silentSignIn(mGoogleApiClient);
         if (opr.isDone()) {
             // If the user's cached credentials are valid, the OptionalPendingResult will be "done"
@@ -136,6 +162,11 @@ public class LoginActivity extends AppCompatActivity implements
         }
     }
 
+    @Override
+    public void onStop(){
+        super.onStop();
+        unregisterReceiver(receiver);
+    }
     // [START onActivityResult]
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -147,6 +178,42 @@ public class LoginActivity extends AppCompatActivity implements
             handleSignInResult(result);
         }
     }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        mItemSignOut = menu.findItem(R.id.action_settings);
+        mItemDiconnect = menu.findItem(R.id.action_disconnect);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            signOut();
+            return true;
+        }
+
+        if (id == R.id.action_disconnect){
+            revokeAccess();
+            return true;
+        }
+        if (id == R.id.action_reload){
+            mAdapter.reloadData();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+
     // [END onActivityResult]
 
     // [START handleSignInResult]
@@ -206,6 +273,8 @@ public class LoginActivity extends AppCompatActivity implements
         // An unresolvable error has occurred and Google APIs (including Sign-In) will not
         // be available.
         Log.d(TAG, "onConnectionFailed:" + connectionResult);
+
+        Toast.makeText(LoginActivity.this, "Sign in to Google failed, Please check your internet connection!", Toast.LENGTH_SHORT).show();
     }
 
     private void showProgressDialog() {
@@ -226,13 +295,28 @@ public class LoginActivity extends AppCompatActivity implements
 
     private void updateUI(boolean signedIn) {
         if (signedIn) {
-            findViewById(R.id.sign_in_button).setVisibility(View.GONE);
-            findViewById(R.id.sign_out_and_disconnect).setVisibility(View.VISIBLE);
+
+            mSignInContener.animate().translationY(mSignInContener.getHeight()).setDuration(300);
+            mSignInContener.setVisibility(View.GONE);
+
+            mContener.animate().translationY(0).setDuration(300);
             mContener.setVisibility(View.VISIBLE);
+            if(null != mItemDiconnect && null != mItemSignOut) {
+                mItemSignOut.setVisible(true);
+                mItemDiconnect.setVisible(true);
+            }
         } else {
+
+            mContener.animate().translationY(mContener.getHeight()).setDuration(300);
             mContener.setVisibility(View.GONE);
-            findViewById(R.id.sign_in_button).setVisibility(View.VISIBLE);
-            findViewById(R.id.sign_out_and_disconnect).setVisibility(View.GONE);
+
+            mSignInContener.animate().translationY(0).setDuration(300);
+            mSignInContener.setVisibility(View.VISIBLE);
+
+            if(null != mItemDiconnect && null != mItemSignOut) {
+                mItemSignOut.setVisible(false);
+                mItemDiconnect.setVisible(false);
+            }
         }
     }
 
@@ -242,12 +326,27 @@ public class LoginActivity extends AppCompatActivity implements
             case R.id.sign_in_button:
                 signIn();
                 break;
-            case R.id.sign_out_button:
-                signOut();
-                break;
-            case R.id.disconnect_button:
-                revokeAccess();
-                break;
+        }
+    }
+
+    public  class MyReceiver extends BroadcastReceiver {
+
+        private final Handler handler; // Handler used to execute code on the UI thread
+
+        public MyReceiver(Handler handler) {
+            this.handler = handler;
+        }
+
+        @Override
+        public void onReceive(final Context context, Intent intent) {
+            // Post the UI updating code to our Handler
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mAdapter.reloadData();
+                    Log.e("BroadcastReceiver","Update UI from onReceive");
+                }
+            });
         }
     }
 }

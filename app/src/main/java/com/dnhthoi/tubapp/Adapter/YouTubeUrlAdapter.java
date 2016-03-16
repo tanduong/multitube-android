@@ -18,6 +18,7 @@ import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import io.realm.Sort;
 
 /**
  * Created by ant on 02/03/2016.
@@ -32,7 +33,7 @@ public class YouTubeUrlAdapter extends RecyclerView.Adapter<YouTubeUrlViewHolder
         this.context = context;
         mRealm  = Realm.getInstance(context);
         mRealm.beginTransaction();
-        listData = mRealm.where(YouTubeData.class).findAll();
+        listData = mRealm.where(YouTubeData.class).findAllSorted("date", Sort.DESCENDING);
         mRealm.commitTransaction();
     }
 
@@ -44,16 +45,18 @@ public class YouTubeUrlAdapter extends RecyclerView.Adapter<YouTubeUrlViewHolder
     }
     public void reloadData(){
         mRealm.beginTransaction();
-        listData = mRealm.where(YouTubeData.class).findAll();
+        listData = mRealm.where(YouTubeData.class).findAllSorted("date", Sort.DESCENDING);
         mRealm.commitTransaction();
+        Log.e("reloadData:: ", "Do reload data");
+        notifyItemRangeChanged(0,listData.size());
     }
     @Override
-    public void onBindViewHolder(YouTubeUrlViewHolder holder, int position) {
+    public void onBindViewHolder(final YouTubeUrlViewHolder holder, int position) {
         final YouTubeData data = listData.get(position);
-        final int index = position;
         Log.e("thumbnails",data.getThumbnails());
         Log.e("URL ::",data.getUrl());
         holder.tvTitle.setText(data.getTitle());
+        holder.tvDuration.setText(data.getDuration());
         Picasso.with(context)
                 .load(data.getThumbnails())
                 .into(holder.imgThumbal);
@@ -67,11 +70,14 @@ public class YouTubeUrlAdapter extends RecyclerView.Adapter<YouTubeUrlViewHolder
         holder.btnDelate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mRealm.beginTransaction();
-                listData.remove(index);
-                mRealm.commitTransaction();
-                notifyItemRemoved(index);
-                notifyItemRangeChanged(index, listData.size());
+                int index = holder.getAdapterPosition();
+                if(index != RecyclerView.NO_POSITION) {
+                    mRealm.beginTransaction();
+                    listData.remove(index);
+                    mRealm.commitTransaction();
+                    notifyItemRemoved(index);
+                    notifyItemRangeChanged(index, listData.size());
+                }
             }
         });
     }

@@ -15,6 +15,17 @@
     <TextView
         android:layout_toRightOf="@+id/img_thumbal"
         android:id="@+id/tv_url"
+        android:text="https://www.youtube.com/watch?v=5Hx7s17BDH4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:autoText="false"
+        android:minLines="1" />
+    <TextView
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@+id/img_thumbal"
+        android:text="Steve Jobs introduces iPhone 4  FaceTime - WWDC (2010)"
+        android:id="@+id/tv_duration"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="5dp"

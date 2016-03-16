@@ -150,7 +150,7 @@ public class IntentReceiver extends BaseIntentReceiver {
 
 // Request a string response from the provided URL.
         final String baseUrl = "https://www.youtube.com/list_ajax?style=json&action_get_templist=1&video_ids=";
-
+        Log.e("getYouTubeData",url);
         String urlFecthInfo = baseUrl + url.split("v=")[1];
         StringRequest stringRequest = new StringRequest(Request.Method.GET, urlFecthInfo,
                 new Response.Listener<String>() {
@@ -160,35 +160,29 @@ public class IntentReceiver extends BaseIntentReceiver {
                         //save youtube url
                         try {
                             JSONObject jsonResponse = new JSONObject(response);
-
-                            //JSONObject jsonResponse = new JSONObject(response);
-
                             JSONArray videoDataArr = jsonResponse.getJSONArray("video");
-
                             JSONObject videoData = videoDataArr.getJSONObject(0);
-
                             String title = videoData.getString("title");
                             String thumbnails = videoData.getString("thumbnail");
-
+                            String duration = videoData.getString("duration");
                             Realm realm = Realm.getInstance(context);
-
-
                             RealmQuery<YouTubeData> query = realm.where(YouTubeData.class);
-
                             // Add query conditions:
                             query.equalTo("url", url);
                             RealmResults<YouTubeData> result1 = query.findAll();
                             if (result1.size() != 0) {
-
                             } else {
                                 realm.beginTransaction();
                                 YouTubeData data = realm.createObject(YouTubeData.class);
                                 data.setUrl(url);
                                 data.setThumbnails(thumbnails);
                                 data.setTitle(title);
+                                data.setDuration(duration);
+                                data.setDate(System.currentTimeMillis());
                                 realm.commitTransaction();
-                            }
 
+                                context.sendBroadcast(new Intent("UpdateUI.RecycleViewItem"));
+                            }
                             Log.e("Done::: ", thumbnails);
                         } catch (JSONException jEx) {
                             Log.e("Json err", jEx.toString());
